@@ -4,14 +4,12 @@ import math
 import sqlite3
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from telegram.constants import ParseMode
 
 # ============ কনফিগ ============
-BOT_TOKEN = "8691010655:AAHXVL-CqUd-PKkF2NDHr9jS2u0bJQAEDAc"  # তোমার বট টোকেন
-ADMIN_IDS = [8194390770, 7134813314]                        # অ্যাডমিন ইউজার আইডি
+BOT_TOKEN = "8691010655:AAHXVL-CqUd-PKkF2NDHr9jS2u0bJQAEDAc"
+ADMIN_IDS = [8194390770, 7134813314]
 DB_NAME = "bot_data.db"
 
-# ============ লগিং ============
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -35,13 +33,11 @@ def save_chat(chat_id, chat_type):
 
 def get_all_chats():
     with sqlite3.connect(DB_NAME) as conn:
-        rows = conn.execute("SELECT chat_id, type FROM users").fetchall()
-    return rows
+        return conn.execute("SELECT chat_id, type FROM users").fetchall()
 
 def get_user_count():
     with sqlite3.connect(DB_NAME) as conn:
-        count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
-    return count
+        return conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
 
 # ============ সেফ ক্যালকুলেটর ============
 ALLOWED_NAMES = {k: v for k, v in math.__dict__.items() if not k.startswith("__")}
@@ -51,22 +47,18 @@ ALLOWED_NAMES.update({
 })
 
 def safe_eval(expr: str):
-    expr = expr.replace("^", "**")   # পাওয়ার সাপোর্টের জন্য
+    expr = expr.replace("^", "**")
     code = compile(expr, "<string>", "eval")
     for name in code.co_names:
         if name not in ALLOWED_NAMES:
             raise NameError(f"'{name}' not allowed")
     return eval(code, {"__builtins__": {}}, ALLOWED_NAMES)
 
-# ============ স্টেট ============
-BROADCAST_STATE = 1
-
-# ============ /start কমান্ড ============
+# ============ /start ============
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     user = update.effective_user
 
-    # চ্যাট সেভ
     if chat.type == "private":
         save_chat(chat.id, "private")
         if user.id in ADMIN_IDS:
@@ -74,33 +66,38 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             await update.message.reply_text(
                 "👋 স্বাগতম অ্যাডমিন!\n"
-                "বাটন ব্যবহার করে বট ম্যানেজ করুন।\n\n"
-                "• গ্রুপে অ্যাড করলেই অটো ক্যালকুলেট হবে।\n"
-                "• /setprivacy দিয়ে প্রাইভেসি ডিসএবল করুন।\n\n"
+                "📊 মোট ইউজার দেখতে ও ব্রডকাস্ট করতে বাটন ব্যবহার করুন।\n\n"
                 "👨‍💻 ডেভেলপার: @bot_Developer_io ও @jhgmaing",
                 reply_markup=markup
             )
         else:
             await update.message.reply_text(
-                "👋 হ্যালো! আমাকে আপনার গ্রুপে অ্যাড করুন, যেকোনো গণিত লিখলেই সাথে সাথে ফলাফল দেব।\n\n"
-                "📌 গ্রুপে অ্যাড করার পর BotFather থেকে /setprivacy দিয়ে প্রাইভেসি মোড বন্ধ করুন।\n\n"
+                "👋 হ্যালো! আমি ক্যালকুলেটর বট।\n"
+                "যেকোনো গণিত পাঠান, সাথে সাথে ফলাফল দেব।\n"
+                "উদাহরণ: 2+2*5, sqrt(144), pi*2\n\n"
+                "📌 আমাকে আপনার গ্রুপে অ্যাড করুন, গ্রুপেও অটো ক্যালকুলেট করব।\n"
+                "গুরুত্বপূর্ণ: গ্রুপে অ্যাডের পর BotFather থেকে /setprivacy → Disable করুন।\n\n"
                 "👨‍💻 ডেভেলপার: @bot_Developer_io ও @jhgmaing"
             )
     else:
         save_chat(chat.id, "group")
-        await update.message.reply_text("✅ ক্যালকুলেটর বট এক্টিভ! এখন গ্রুপে যেকোনো অঙ্ক লিখুন, সাথে সাথে উত্তর পাবেন।")
+        await update.message.reply_text(
+            "✅ বট সক্রিয়! এখন গ্রুপে যেকোনো অঙ্ক লিখুন, উত্তর পাবেন।\n"
+            "⚠️ দয়া করে BotFather এ গিয়ে /setprivacy → Disable করে দিন, নাহলে আমি শুধু /start দেখতে পাব।"
+        )
 
-# ============ মেসেজ হ্যান্ডলার (টেক্সট) ============
+# ============ টেক্সট হ্যান্ডলার ============
+BROADCAST_STATE = 1
+
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message = update.message
+    msg = update.message
     user = update.effective_user
     chat = update.effective_chat
-    text = message.text.strip() if message.text else ""
+    text = msg.text.strip() if msg.text else ""
 
-    # চ্যাট সেভ
     save_chat(chat.id, "private" if chat.type == "private" else "group")
 
-    # অ্যাডমিন প্রাইভেট ব্রডকাস্ট ফ্লো
+    # === অ্যাডমিন প্রাইভেট ব্রডকাস্ট ফ্লো ===
     if user.id in ADMIN_IDS and chat.type == "private":
         state = context.user_data.get("state")
         if state == BROADCAST_STATE:
@@ -108,29 +105,30 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data["state"] = None
             return
         if text == "📊 All Users":
-            await message.reply_text(f"👥 মোট ইউজার/গ্রুপ: {get_user_count()}")
+            await msg.reply_text(f"👥 মোট চ্যাট (ইউজার+গ্রুপ): {get_user_count()}")
             return
         if text == "📢 Broadcast":
             context.user_data["state"] = BROADCAST_STATE
-            await message.reply_text("📢 ব্রডকাস্ট করতে যা পাঠাতে চান (টেক্সট/ছবি/ভিডিও) সেন্ড করুন।\nবাতিল করতে /cancel লিখুন।")
+            await msg.reply_text("📢 যা পাঠাতে চান (টেক্সট/ছবি/ভিডিও) সেন্ড করুন। বাতিল করতে /cancel")
             return
         if text == "/cancel":
             context.user_data["state"] = None
-            await message.reply_text("❌ ব্রডকাস্ট বাতিল।")
+            await msg.reply_text("❌ ব্রডকাস্ট বাতিল।")
             return
 
-    # গ্রুপে বা নন-অ্যাডমিন প্রাইভেটে অটো ক্যালকুলেট
-    if (chat.type == "group") or (chat.type == "private" and user.id not in ADMIN_IDS):
+    # === ক্যালকুলেটর লজিক ===
+    if chat.type == "group" or (chat.type == "private" and user.id not in ADMIN_IDS):
         if not (user.id in ADMIN_IDS and context.user_data.get("state") == BROADCAST_STATE):
             result = await calc_reply(text)
             if result:
-                await message.reply_text(f"🧮 {result}", parse_mode=ParseMode.HTML)
+                await msg.reply_text(f"🧮 {result}")
+            elif chat.type == "private":
+                await msg.reply_text("🙏 আমি ক্যালকুলেটর বট। দয়া করে যেকোনো অঙ্ক লিখুন।\nযেমন: `2+3*4`, `sqrt(100)`, `pi*5`")
 
 async def calc_reply(text: str):
     text = text.strip()
     if len(text) > 200:
         return None
-    # Allow digits, basic operators, functions, pi, e, spaces
     if not re.match(r'^[0-9+\-*/%^().\sa-zA-Z_πe]+$', text):
         return None
     try:
@@ -141,17 +139,17 @@ async def calc_reply(text: str):
     except Exception:
         return None
 
-# ============ মিডিয়া হ্যান্ডলার (ছবি/ভিডিও) ============
+# ============ মিডিয়া হ্যান্ডলার (শুধু অ্যাডমিন ব্রডকাস্টের জন্য) ============
 async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message = update.message
+    msg = update.message
     user = update.effective_user
     chat = update.effective_chat
     save_chat(chat.id, "private" if chat.type == "private" else "group")
+
     if user.id in ADMIN_IDS and chat.type == "private" and context.user_data.get("state") == BROADCAST_STATE:
         await broadcast_content(update, context)
         context.user_data["state"] = None
 
-# ============ ব্রডকাস্ট সেন্ড ============
 async def broadcast_content(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     chats = get_all_chats()
@@ -178,7 +176,7 @@ async def broadcast_content(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.warning(f"Broadcast fail {cid}: {e}")
             fail += 1
-    await update.message.reply_text(f"✅ ব্রডকাস্ট শেষ!\nসফল: {success}\nব্যর্থ: {fail}")
+    await msg.reply_text(f"✅ ব্রডকাস্ট শেষ!\nসফল: {success}\nব্যর্থ: {fail}")
 
 # ============ এরর হ্যান্ডলার ============
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
@@ -187,11 +185,17 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
 # ============ মেইন ============
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
-
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-    # মিডিয়া ফিল্টার (ব্রডকাস্টের জন্য)
-    media_filter = filters.PHOTO | filters.VIDEO | filters.DOCUMENT | filters.AUDIO | filters.VOICE | filters.STICKER
+    # ✅ ফিক্সড মিডিয়া ফিল্টার (DOCUMENT → Document.ALL, STICKER → Sticker.ALL)
+    media_filter = (
+        filters.PHOTO |
+        filters.VIDEO |
+        filters.Document.ALL |
+        filters.AUDIO |
+        filters.VOICE |
+        filters.Sticker.ALL
+    )
     app.add_handler(MessageHandler(media_filter, handle_media))
     app.add_error_handler(error_handler)
 
