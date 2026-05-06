@@ -1,313 +1,389 @@
 # ============================================================
-# 🔥 ULTRA PRO CALCULATOR BOT v4.0.0 — ১০০% ওয়ার্কিং
+# 🚀 SUPER ULTIMATE CALCULATOR BOT v5.0.0
 # 🌐 বাংলা · English · Русский · हिन्दी
 # 👨‍💻 @bot_Developer_io & @jhgmaing
 # ============================================================
 
 import logging, re, math, sqlite3
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import (
+    Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
+)
 
 # ==================== CONFIG ====================
-BOT_TOKEN = "8691010655:AAHXVL-CqUd-PKkF2NDHr9jS2u0bJQAEDAc"
+BOT_TOKEN = "8691010655:AAHXVL-CqUd-PKkF2NDHr9jS2u0bJQAEDAc"  # ✅ এই টোকেনটাই ঠিক
 ADMIN_IDS = [8194390770, 7134813314]
 DB_NAME = "bot_data.db"
-VERSION = "4.0.0"
-DEVELOPERS = "@bot_Developer_io & @jhgmaing"
+VERSION = "5.0.0"
+DEVS = "@bot_Developer_io & @jhgmaing"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# ==================== MULTI-LANGUAGE ====================
+# ==================== LANGUAGE ====================
 T = {
     "bn": {
-        "start_user": (
-            "👋 হ্যালো! আমি স্মার্ট ক্যালকুলেটর বট।\n\n"
-            "📌 আমাকে আপনার গ্রুপে অ্যাড করুন। গ্রুপে 2+2, sqrt(81) ইত্যাদি লিখলেই উত্তর দেব।\n\n"
-            "🌐 সংস্করণ: {ver}\n"
-            "👨‍💻 {dev}"
-        ),
+        "start_user": "👋 হ্যালো! আমি স্মার্ট ক্যালকুলেটর বট।\n\n📌 আমাকে গ্রুপে অ্যাড করুন।\n2+2, sqrt(81) লিখলে অটো উত্তর দেব।\n/inlinecal – ইন্টারেক্টিভ ক্যালকুলেটর।\n\n🌐 v{ver}\n👨‍💻 {dev}",
         "start_admin": "👑 অ্যাডমিন প্যানেল\n\n🌐 v{ver}\n👨‍💻 {dev}",
         "add_btn": "➕ গ্রুপে অ্যাড করুন",
         "calc_result": "🧮 {res}",
-        "not_math": "🙏 যেকোনো অঙ্ক লিখুন (যেমন: 2+3*4, sqrt(100))",
-        "all_users": "👥 মোট চ্যাট: {count}",
-        "broadcast_prompt": "📢 যা পাঠাতে চান (টেক্সট/ছবি/ভিডিও) সেন্ড করুন। বাতিল করতে /cancel",
-        "broadcast_done": "✅ ব্রডকাস্ট শেষ!\nসফল: {ok}\nব্যর্থ: {bad}",
+        "not_math": "🙏 কোনো অঙ্ক লিখুন (2+3*4, sqrt(100))",
+        "all_users": "👥 মোট চ্যাট: {cnt}",
+        "broadcast_prompt": "📢 যা পাঠাবেন সেন্ড করুন। /cancel বাতিল।",
+        "broadcast_done": "✅ সম্পন্ন!\nসফল: {ok}\nব্যর্থ: {bad}",
         "broadcast_cancel": "❌ ব্রডকাস্ট বাতিল।",
-        "privacy_note": "⚠️ গ্রুপে কাজ করতে BotFather থেকে /setprivacy → Disable করুন ও বট রিমুভ করে আবার অ্যাড করুন।",
+        "inlinecalc_title": "🔢 ইন্টারেক্টিভ ক্যালকুলেটর",
+        "inlinecalc_expr": "অভিব্যক্তি: {expr}",
+        "inlinecalc_empty": "এখনো কিছু দেওয়া হয়নি",
+        "inlinecalc_result": "ফলাফল: {res}",
+        "inlinecalc_error": "ত্রুটি",
+        "privacy_note": "⚠️ গ্রুপে কাজ করতে BotFather-এ /setprivacy → Disable করে বট Remove + Add করুন।",
     },
     "en": {
-        "start_user": (
-            "👋 Hi! I'm a smart calculator bot.\n\n"
-            "📌 Add me to your group, and I'll auto-solve math like 2+2, sqrt(81).\n\n"
-            "🌐 Version: {ver}\n"
-            "👨‍💻 {dev}"
-        ),
+        "start_user": "👋 Hi! I'm a smart calculator bot.\n\n📌 Add me to a group.\n2+2, sqrt(81) will auto-answer.\n/inlinecal – interactive inline calculator.\n\n🌐 v{ver}\n👨‍💻 {dev}",
         "start_admin": "👑 Admin Panel\n\n🌐 v{ver}\n👨‍💻 {dev}",
         "add_btn": "➕ Add to Group",
         "calc_result": "🧮 {res}",
         "not_math": "🙏 Send a math expression (e.g. 2+3*4, sqrt(100))",
-        "all_users": "👥 Total chats: {count}",
+        "all_users": "👥 Total chats: {cnt}",
         "broadcast_prompt": "📢 Send content to broadcast. /cancel to abort.",
-        "broadcast_done": "✅ Broadcast done!\nSuccess: {ok}\nFailed: {bad}",
+        "broadcast_done": "✅ Done!\nSuccess: {ok}\nFailed: {bad}",
         "broadcast_cancel": "❌ Broadcast cancelled.",
-        "privacy_note": "⚠️ For group support, disable privacy: BotFather → /setprivacy → Disable, then re-add the bot.",
+        "inlinecalc_title": "🔢 Interactive Calculator",
+        "inlinecalc_expr": "Expression: {expr}",
+        "inlinecalc_empty": "Nothing entered yet",
+        "inlinecalc_result": "Result: {res}",
+        "inlinecalc_error": "Error",
+        "privacy_note": "⚠️ Disable privacy mode in BotFather, then remove & re-add the bot.",
     },
     "ru": {
-        "start_user": (
-            "👋 Привет! Я бот-калькулятор.\n\n"
-            "📌 Добавь меня в группу, и я решу 2+2, sqrt(81) автоматически.\n\n"
-            "🌐 Версия: {ver}\n"
-            "👨‍💻 {dev}"
-        ),
+        "start_user": "👋 Привет! Я умный бот-калькулятор.\n\n📌 Добавь в группу.\n2+2, sqrt(81) решу автоматически.\n/inlinecal – интерактивный калькулятор.\n\n🌐 v{ver}\n👨‍💻 {dev}",
         "start_admin": "👑 Админ-панель\n\n🌐 v{ver}\n👨‍💻 {dev}",
         "add_btn": "➕ Добавить в группу",
         "calc_result": "🧮 {res}",
-        "not_math": "🙏 Отправьте выражение (напр. 2+3*4, sqrt(100))",
-        "all_users": "👥 Всего чатов: {count}",
-        "broadcast_prompt": "📢 Отправьте контент для рассылки. /cancel отмена.",
-        "broadcast_done": "✅ Рассылка завершена!\nУспешно: {ok}\nНеудачно: {bad}",
+        "not_math": "🙏 Отправьте выражение (2+3*4, sqrt(100))",
+        "all_users": "👥 Всего чатов: {cnt}",
+        "broadcast_prompt": "📢 Отправьте контент. /cancel отмена.",
+        "broadcast_done": "✅ Готово!\nУспешно: {ok}\nНеудачно: {bad}",
         "broadcast_cancel": "❌ Рассылка отменена.",
-        "privacy_note": "⚠️ Отключите приватность: BotFather → /setprivacy → Disable, затем перезапустите бота.",
+        "inlinecalc_title": "🔢 Интерактивный калькулятор",
+        "inlinecalc_expr": "Выражение: {expr}",
+        "inlinecalc_empty": "Пока ничего не введено",
+        "inlinecalc_result": "Результат: {res}",
+        "inlinecalc_error": "Ошибка",
+        "privacy_note": "⚠️ Отключите приватность в BotFather, затем удалите и снова добавьте бота.",
     },
     "hi": {
-        "start_user": (
-            "👋 नमस्ते! मैं स्मार्ट कैलकुलेटर बॉट हूँ।\n\n"
-            "📌 मुझे अपने ग्रुप में जोड़ें, मैं 2+2, sqrt(81) अपने आप हल करूँगा।\n\n"
-            "🌐 संस्करण: {ver}\n"
-            "👨‍💻 {dev}"
-        ),
+        "start_user": "👋 नमस्ते! मैं स्मार्ट कैलकुलेटर बॉट हूँ।\n\n📌 मुझे ग्रुप में जोड़ें।\n2+2, sqrt(81) अपने आप हल करूँगा।\n/inlinecal – इंटरैक्टिव कैलकुलेटर।\n\n🌐 v{ver}\n👨‍💻 {dev}",
         "start_admin": "👑 एडमिन पैनल\n\n🌐 v{ver}\n👨‍💻 {dev}",
         "add_btn": "➕ ग्रुप में जोड़ें",
         "calc_result": "🧮 {res}",
-        "not_math": "🙏 कोई गणित अभिव्यक्ति भेजें (जैसे 2+3*4, sqrt(100))",
-        "all_users": "👥 कुल चैट: {count}",
-        "broadcast_prompt": "📢 प्रसारण सामग्री भेजें। /cancel रद्द करें।",
-        "broadcast_done": "✅ प्रसारण समाप्त!\nसफल: {ok}\nअसफल: {bad}",
+        "not_math": "🙏 कोई गणित भेजें (2+3*4, sqrt(100))",
+        "all_users": "👥 कुल चैट: {cnt}",
+        "broadcast_prompt": "📢 प्रसारण सामग्री भेजें। /cancel रद्द।",
+        "broadcast_done": "✅ पूर्ण!\nसफल: {ok}\nअसफल: {bad}",
         "broadcast_cancel": "❌ प्रसारण रद्द।",
-        "privacy_note": "⚠️ ग्रुप में काम करने के लिए BotFather → /setprivacy → Disable करें, फिर बॉट को री-ऐड करें।",
+        "inlinecalc_title": "🔢 इंटरैक्टिव कैलकुलेटर",
+        "inlinecalc_expr": "अभिव्यक्ति: {expr}",
+        "inlinecalc_empty": "अभी तक कुछ नहीं डाला",
+        "inlinecalc_result": "परिणाम: {res}",
+        "inlinecalc_error": "त्रुटि",
+        "privacy_note": "⚠️ BotFather में प्राइवेसी मोड बंद करें, फिर बॉट हटाकर दोबारा जोड़ें।",
     }
 }
 
-def lang(user):
+def _(user, key, **kw):
     code = getattr(user, 'language_code', 'en') or 'en'
-    return T.get(code[:2], T['en'])
+    base = T.get(code[:2], T['en'])
+    return base[key].format(**kw, ver=VERSION, dev=DEVS)
 
-# ==================== DATABASE ====================
+# ==================== DB ====================
 def init_db():
     with sqlite3.connect(DB_NAME) as conn:
         conn.execute("CREATE TABLE IF NOT EXISTS users (chat_id INTEGER PRIMARY KEY, type TEXT NOT NULL)")
         conn.commit()
 init_db()
 
-def save_chat(chat_id, typ):
+def save(chat_id, typ):
     with sqlite3.connect(DB_NAME) as conn:
         conn.execute("INSERT OR IGNORE INTO users (chat_id, type) VALUES (?, ?)", (chat_id, typ))
         conn.commit()
 
-def get_all_chats():
+def get_all():
     with sqlite3.connect(DB_NAME) as conn:
         return conn.execute("SELECT chat_id, type FROM users").fetchall()
 
-def count_chats():
+def count_all():
     with sqlite3.connect(DB_NAME) as conn:
         return conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
 
 # ==================== MATH ENGINE ====================
-SAFE_MATH = {k:v for k,v in math.__dict__.items() if not k.startswith("__")}
-SAFE_MATH.update({
-    "abs": abs, "round": round, "min": min, "max": max, "pow": pow,
-    "int": int, "float": float, "pi": math.pi, "e": math.e,
-    "sin": math.sin, "cos": math.cos, "tan": math.tan,
-    "asin": math.asin, "acos": math.acos, "atan": math.atan,
-    "sinh": math.sinh, "cosh": math.cosh, "tanh": math.tanh,
-    "log": math.log, "log10": math.log10, "sqrt": math.sqrt,
-    "ceil": math.ceil, "floor": math.floor, "factorial": math.factorial,
-    "degrees": math.degrees, "radians": math.radians,
+SAFE = {k:v for k,v in math.__dict__.items() if not k.startswith("__")}
+SAFE.update({
+    "abs":abs,"round":round,"min":min,"max":max,"pow":pow,"int":int,"float":float,
+    "pi":math.pi,"e":math.e,"sin":math.sin,"cos":math.cos,"tan":math.tan,
+    "asin":math.asin,"acos":math.acos,"atan":math.atan,"sinh":math.sinh,"cosh":math.cosh,
+    "tanh":math.tanh,"log":math.log,"log10":math.log10,"sqrt":math.sqrt,
+    "ceil":math.ceil,"floor":math.floor,"factorial":math.factorial,
+    "degrees":math.degrees,"radians":math.radians
 })
 
-def safe_eval(expr: str):
+def safe_eval(expr):
     expr = expr.replace("^", "**")
     code = compile(expr, "<string>", "eval")
     for name in code.co_names:
-        if name not in SAFE_MATH:
+        if name not in SAFE:
             raise NameError(f"'{name}' not allowed")
-    return eval(code, {"__builtins__": {}}, SAFE_MATH)
+    return eval(code, {"__builtins__": {}}, SAFE)
 
-def format_result(res):
+def fmt(res):
     if isinstance(res, float):
         return f"{res:.10f}".rstrip('0').rstrip('.')
     return str(res)
 
-def extract_math(text: str):
+def extract_math(text):
     text = text.strip()
     if not text:
         return None
-    # পুরো টেক্সট এক্সপ্রেশন?
     if re.match(r'^[0-9+\-*/%^().\s\wπe]+$', text):
-        try:
-            return format_result(safe_eval(text))
-        except:
-            pass
-    # সাবস্ট্রিং প্যাটার্ন
-    patterns = [
+        try: return fmt(safe_eval(text))
+        except: pass
+    for pat in [
         r'([-+]?\d*\.?\d+[+\-*/%^]+[-+]?\d*\.?\d+(?:[+\-*/%^][-+]?\d*\.?\d+)*)',
         r'((?:sqrt|sin|cos|tan|log|pi|e|abs|factorial|pow)\s*\([^)]+\))',
         r'([-+]?\d*\.?\d+\s*[+\-*/%^]\s*[-+]?\d*\.?\d+)',
-    ]
-    for pat in patterns:
-        match = re.search(pat, text)
-        if match:
-            expr = match.group(1).strip()
-            try:
-                return format_result(safe_eval(expr))
-            except:
-                continue
+    ]:
+        m = re.search(pat, text)
+        if m:
+            e = m.group(1).strip()
+            try: return fmt(safe_eval(e))
+            except: continue
     return None
 
-# ==================== BROADCAST STATE ====================
-BROADCAST_STATE = 1
+# ==================== BROADCAST ====================
+BROADCAST = 1
+
+# ==================== INLINE CALCULATOR ====================
+def build_calc_markup(expr: str):
+    """Build inline keyboard for calculator."""
+    buttons = [
+        ["7", "8", "9", "/", "("],
+        ["4", "5", "6", "*", ")"],
+        ["1", "2", "3", "-", "^"],
+        ["0", ".", "C", "+", "√"],
+        ["sin", "cos", "tan", "log", "pi"],
+        ["⌫", "=", " ", " ", " "]
+    ]
+    keyboard = []
+    for row in buttons:
+        kb_row = []
+        for btn in row:
+            if btn.strip():
+                data = btn
+                if btn == "⌫":
+                    data = "BACKSPACE"
+                elif btn == "C":
+                    data = "CLEAR"
+                elif btn == "=":
+                    data = "EVAL"
+                elif btn == "√":
+                    data = "SQRT("
+                kb_row.append(InlineKeyboardButton(btn, callback_data=f"calc_{data}"))
+            else:
+                kb_row.append(InlineKeyboardButton(" ", callback_data="calc_IGNORE"))
+        keyboard.append(kb_row)
+    return InlineKeyboardMarkup(keyboard)
+
+def process_calc_button(expr: str, data: str):
+    """Process a single calculator button press."""
+    if data == "CLEAR":
+        return ""
+    elif data == "EVAL":
+        try:
+            result = safe_eval(expr)
+            return fmt(result)
+        except:
+            return "ERROR"
+    elif data == "BACKSPACE":
+        return expr[:-1]
+    elif data == "SQRT(":
+        return expr + "sqrt("
+    elif data == "IGNORE":
+        return expr
+    else:
+        return expr + data
+
+def inlinecalc_message(expr, lang_dict):
+    """Generate message text for inline calculator."""
+    if expr == "":
+        exp_str = lang_dict["inlinecalc_empty"]
+    else:
+        exp_str = expr
+    title = lang_dict["inlinecalc_title"]
+    expr_line = lang_dict["inlinecalc_expr"].format(expr=exp_str)
+    try:
+        res = fmt(safe_eval(expr))
+        res_line = lang_dict["inlinecalc_result"].format(res=res)
+    except:
+        res_line = lang_dict["inlinecalc_error"]
+    return f"{title}\n\n{expr_line}\n{res_line}"
 
 # ==================== HANDLERS ====================
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     chat = update.effective_chat
-    t = lang(user)
+    t = _(user)
 
     if chat.type == "private":
-        save_chat(chat.id, "private")
-        # ইনলাইন বাটন: গ্রুপে অ্যাড
-        keyboard = [[InlineKeyboardButton(t["add_btn"], url=f"https://t.me/{context.bot.username}?startgroup=true")]]
+        save(chat.id, "private")
+        add_btn = InlineKeyboardButton(t["add_btn"], url=f"https://t.me/{ctx.bot.username}?startgroup=true")
         if user.id in ADMIN_IDS:
-            # অ্যাডমিন: ReplyKeyboard + Inline
             reply_kb = [["📊 All Users", "📢 Broadcast"]]
             await update.message.reply_text(
-                t["start_admin"].format(ver=VERSION, dev=DEVELOPERS),
+                t["start_admin"],
                 reply_markup=ReplyKeyboardMarkup(reply_kb, resize_keyboard=True)
             )
             await update.message.reply_text(
                 t["privacy_note"],
-                reply_markup=InlineKeyboardMarkup(keyboard)
+                reply_markup=InlineKeyboardMarkup([[add_btn]])
             )
         else:
             await update.message.reply_text(
-                t["start_user"].format(ver=VERSION, dev=DEVELOPERS),
-                reply_markup=InlineKeyboardMarkup(keyboard)
+                t["start_user"],
+                reply_markup=InlineKeyboardMarkup([[add_btn]])
             )
     else:
-        save_chat(chat.id, "group")
-        # গ্রুপ: কিছু বলবে না
+        save(chat.id, "group")
 
-async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    t = lang(user)
-    await update.message.reply_text("🧠 " + t.get("not_math", "").replace("🙏 ", ""))
-
-async def new_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def inlinecal(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Launch inline calculator."""
     chat = update.effective_chat
-    for member in update.message.new_chat_members:
-        if member.id == context.bot.id:
-            save_chat(chat.id, "group")
-            # একদম চুপ
-            break
+    user = update.effective_user
+    t = _(user)
+    expr = ""
+    msg = inlinecalc_message(expr, t)
+    await update.message.reply_text(msg, reply_markup=build_calc_markup(expr))
 
-async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def calc_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    user = update.effective_user
+    t = _(user)
+    data = query.data.replace("calc_", "")
+    # Get current expression from message text (parse between lines)
+    current_text = query.message.text
+    # We stored expression in message text as "<title>\n\nExpression: ...\nResult: ..."
+    # Better: store expression in callback data? No, we have 64 char limit. We'll use the message text to extract expression.
+    # The generated message has "Expression: <expr>" line. We'll parse it.
+    lines = current_text.split("\n")
+    expr_str = None
+    for line in lines:
+        # Look for line containing "Expression:" (English) or equivalent
+        # Use detection of the key
+        for lang_key in ["Expression:", "अभिव्यक्ति:", "Выражение:", "অভিব্যক্তি:"]:
+            if line.startswith(lang_key):
+                expr_str = line[len(lang_key):].strip()
+                break
+        if expr_str is not None:
+            break
+    if expr_str is None:
+        expr = ""
+    else:
+        expr = expr_str.rstrip()
+    if expr == t["inlinecalc_empty"]:
+        expr = ""
+    # Process
+    new_expr = process_calc_button(expr, data)
+    if new_expr == "ERROR":
+        new_expr = expr  # keep old
+        # show error
+    new_msg = inlinecalc_message(new_expr, t)
+    try:
+        await query.edit_message_text(new_msg, reply_markup=build_calc_markup(new_expr))
+    except Exception as e:
+        logger.warning(f"Failed to edit inline calc: {e}")
+    await query.answer()
+
+# ==================== MESSAGE HANDLERS ====================
+async def text_msg(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     user = update.effective_user
     chat = update.effective_chat
-    text = msg.text.strip() if msg.text else ""
-    t = lang(user)
+    txt = msg.text.strip() if msg.text else ""
+    t = _(user)
 
-    save_chat(chat.id, "private" if chat.type == "private" else "group")
+    save(chat.id, "private" if chat.type=="private" else "group")
 
-    # অ্যাডমিন ব্রডকাস্ট ফ্লো (প্রাইভেট)
-    if user.id in ADMIN_IDS and chat.type == "private":
-        state = context.user_data.get("state")
-        if state == BROADCAST_STATE:
-            await broadcast_send(update, context)
-            context.user_data["state"] = None
-            return
-        if text == "📊 All Users":
-            await msg.reply_text(t["all_users"].format(count=count_chats()))
-            return
-        if text == "📢 Broadcast":
-            context.user_data["state"] = BROADCAST_STATE
-            await msg.reply_text(t["broadcast_prompt"])
-            return
-        if text == "/cancel":
-            context.user_data["state"] = None
-            await msg.reply_text(t["broadcast_cancel"])
-            return
+    # Admin broadcast
+    if user.id in ADMIN_IDS and chat.type=="private":
+        state = ctx.user_data.get("state")
+        if state == BROADCAST:
+            await broadcast_send(update, ctx)
+            ctx.user_data["state"] = None; return
+        if txt == "📊 All Users":
+            await msg.reply_text(t["all_users"].format(cnt=count_all())); return
+        if txt == "📢 Broadcast":
+            ctx.user_data["state"] = BROADCAST
+            await msg.reply_text(t["broadcast_prompt"]); return
+        if txt == "/cancel":
+            ctx.user_data["state"] = None
+            await msg.reply_text(t["broadcast_cancel"]); return
 
-    # ক্যালকুলেটর (গ্রুপ + নন-অ্যাডমিন প্রাইভেট)
-    if chat.type == "group" or (chat.type == "private" and user.id not in ADMIN_IDS):
-        if not (user.id in ADMIN_IDS and context.user_data.get("state") == BROADCAST_STATE):
-            result = extract_math(text)
-            if result:
-                await msg.reply_text(t["calc_result"].format(res=result))
-            elif chat.type == "private":
+    # Auto calculator
+    if chat.type=="group" or (chat.type=="private" and user.id not in ADMIN_IDS):
+        if not (user.id in ADMIN_IDS and ctx.user_data.get("state")==BROADCAST):
+            res = extract_math(txt)
+            if res:
+                await msg.reply_text(t["calc_result"].format(res=res))
+            elif chat.type=="private":
                 await msg.reply_text(t["not_math"])
 
-async def media_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def media_msg(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     user = update.effective_user
     chat = update.effective_chat
-    save_chat(chat.id, "private" if chat.type == "private" else "group")
+    save(chat.id, "private" if chat.type=="private" else "group")
+    if user.id in ADMIN_IDS and chat.type=="private" and ctx.user_data.get("state")==BROADCAST:
+        await broadcast_send(update, ctx)
+        ctx.user_data["state"] = None
 
-    if user.id in ADMIN_IDS and chat.type == "private" and context.user_data.get("state") == BROADCAST_STATE:
-        await broadcast_send(update, context)
-        context.user_data["state"] = None
-
-async def broadcast_send(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def broadcast_send(update, ctx):
     msg = update.message
     user = update.effective_user
-    t = lang(user)
-    all_chats = get_all_chats()
+    t = _(user)
+    all_chats = get_all()
     ok, bad = 0, 0
-    for cid, _ in all_chats:
+    for cid,_ in all_chats:
         try:
-            if msg.text:
-                await context.bot.send_message(cid, msg.text)
-            elif msg.photo:
-                await context.bot.send_photo(cid, msg.photo[-1].file_id, caption=msg.caption)
-            elif msg.video:
-                await context.bot.send_video(cid, msg.video.file_id, caption=msg.caption)
-            elif msg.document:
-                await context.bot.send_document(cid, msg.document.file_id, caption=msg.caption)
-            elif msg.audio:
-                await context.bot.send_audio(cid, msg.audio.file_id, caption=msg.caption)
-            elif msg.voice:
-                await context.bot.send_voice(cid, msg.voice.file_id)
-            elif msg.sticker:
-                await context.bot.send_sticker(cid, msg.sticker.file_id)
-            else:
-                continue
+            if msg.text: await ctx.bot.send_message(cid, msg.text)
+            elif msg.photo: await ctx.bot.send_photo(cid, msg.photo[-1].file_id, caption=msg.caption)
+            elif msg.video: await ctx.bot.send_video(cid, msg.video.file_id, caption=msg.caption)
+            elif msg.document: await ctx.bot.send_document(cid, msg.document.file_id, caption=msg.caption)
+            elif msg.audio: await ctx.bot.send_audio(cid, msg.audio.file_id, caption=msg.caption)
+            elif msg.voice: await ctx.bot.send_voice(cid, msg.voice.file_id)
+            elif msg.sticker: await ctx.bot.send_sticker(cid, msg.sticker.file_id)
+            else: continue
             ok += 1
         except Exception as e:
             logger.warning(f"Broadcast fail {cid}: {e}")
             bad += 1
     await msg.reply_text(t["broadcast_done"].format(ok=ok, bad=bad))
 
-async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
-    logger.error(f"Update {update} caused error {context.error}")
+async def error_handler(update, ctx):
+    logger.error(f"Update {update} caused error {ctx.error}")
 
 # ==================== MAIN ====================
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_cmd))
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, new_chat_members))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
-    # মিডিয়া ফিল্টার (ব্রডকাস্টের জন্য)
-    media_filter = (
-        filters.PHOTO | filters.VIDEO | filters.Document.ALL |
-        filters.AUDIO | filters.VOICE | filters.Sticker.ALL
-    )
-    app.add_handler(MessageHandler(media_filter, media_handler))
+    app.add_handler(CommandHandler("inlinecal", inlinecal))
+    app.add_handler(CallbackQueryHandler(calc_callback, pattern="^calc_"))
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, lambda u,c: save(u.effective_chat.id,"group")))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_msg))
+    media = filters.PHOTO|filters.VIDEO|filters.Document.ALL|filters.AUDIO|filters.VOICE|filters.Sticker.ALL
+    app.add_handler(MessageHandler(media, media_msg))
     app.add_error_handler(error_handler)
 
-    logger.info(f"🤖 Bot v{VERSION} started polling...")
+    logger.info(f"🤖 Bot v{VERSION} running...")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
