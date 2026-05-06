@@ -29,8 +29,6 @@ LANG = {
                       "🌐 সংস্করণ: {version}\n"
                       "👨‍💻 ডেভেলপার: {dev}",
         "start_admin": "👑 অ্যাডমিন প্যানেল\n\n🌐 সংস্করণ: {version}\n👨‍💻 {dev}",
-        "start_group": "",  # no message
-        "group_added": "✅ ক্যালকুলেটর বট চালু!\n⚠️ অনুগ্রহ করে BotFather থেকে /setprivacy → Disable করে দিন।",
         "help": "🧠 ক্যালকুলেটর ব্যবহার:\n"
                 "• সরাসরি অঙ্ক লিখুন: 2+3*4\n"
                 "• ফাংশন: sqrt(144), sin(30), log(100), pi*2\n"
@@ -42,7 +40,6 @@ LANG = {
         "broadcast_prompt": "📢 যা পাঠাতে চান (টেক্সট/ছবি/ভিডিও) সেন্ড করুন। বাতিল করতে /cancel",
         "broadcast_done": "✅ ব্রডকাস্ট শেষ!\nসফল: {success}\nব্যর্থ: {fail}",
         "broadcast_cancel": "❌ ব্রডকাস্ট বাতিল।",
-        "privacy_warning": "⚠️ দয়া করে BotFather থেকে /setprivacy → Disable করুন।",
     },
     "en": {
         "start_user": "👋 Hello! I am Smart Calculator Bot.\n\n"
@@ -50,8 +47,6 @@ LANG = {
                       "🌐 Version: {version}\n"
                       "👨‍💻 Developers: {dev}",
         "start_admin": "👑 Admin Panel\n\n🌐 Version: {version}\n👨‍💻 {dev}",
-        "start_group": "",
-        "group_added": "✅ Calculator bot is active!\n⚠️ Please go to BotFather and /setprivacy → Disable.",
         "help": "🧠 Usage:\n"
                 "• Direct math: 2+3*4\n"
                 "• Functions: sqrt(144), sin(30), log(100), pi*2\n"
@@ -63,7 +58,6 @@ LANG = {
         "broadcast_prompt": "📢 Send what you want to broadcast (text/photo/video). Cancel with /cancel",
         "broadcast_done": "✅ Broadcast finished!\nSuccess: {success}\nFailed: {fail}",
         "broadcast_cancel": "❌ Broadcast cancelled.",
-        "privacy_warning": "⚠️ Please disable privacy mode: BotFather → /setprivacy → Disable.",
     },
     "ru": {
         "start_user": "👋 Привет! Я умный бот-калькулятор.\n\n"
@@ -71,8 +65,6 @@ LANG = {
                       "🌐 Версия: {version}\n"
                       "👨‍💻 Разработчики: {dev}",
         "start_admin": "👑 Админ-панель\n\n🌐 Версия: {version}\n👨‍💻 {dev}",
-        "start_group": "",
-        "group_added": "✅ Бот-калькулятор активирован!\n⚠️ Пожалуйста, отключите приватность в BotFather: /setprivacy → Disable.",
         "help": "🧠 Использование:\n"
                 "• Введите пример: 2+3*4\n"
                 "• Функции: sqrt(144), sin(30), log(100), pi*2\n"
@@ -84,7 +76,6 @@ LANG = {
         "broadcast_prompt": "📢 Отправьте контент для рассылки (текст/фото/видео). Отмена /cancel",
         "broadcast_done": "✅ Рассылка завершена!\nУспешно: {success}\nНеудачно: {fail}",
         "broadcast_cancel": "❌ Рассылка отменена.",
-        "privacy_warning": "⚠️ Отключите режим приватности: BotFather → /setprivacy → Disable.",
     },
     "hi": {
         "start_user": "👋 नमस्ते! मैं स्मार्ट कैलकुलेटर बॉट हूँ।\n\n"
@@ -92,8 +83,6 @@ LANG = {
                       "🌐 संस्करण: {version}\n"
                       "👨‍💻 डेवलपर: {dev}",
         "start_admin": "👑 एडमिन पैनल\n\n🌐 संस्करण: {version}\n👨‍💻 {dev}",
-        "start_group": "",
-        "group_added": "✅ कैलकुलेटर बॉट सक्रिय!\n⚠️ कृपया BotFather से /setprivacy → Disable करें।",
         "help": "🧠 उपयोग:\n"
                 "• सीधा गणित: 2+3*4\n"
                 "• फंक्शन: sqrt(144), sin(30), log(100), pi*2\n"
@@ -105,12 +94,10 @@ LANG = {
         "broadcast_prompt": "📢 प्रसारण सामग्री भेजें (टेक्स्ट/फोटो/वीडियो)। रद्द करें /cancel",
         "broadcast_done": "✅ प्रसारण समाप्त!\nसफल: {success}\nअसफल: {fail}",
         "broadcast_cancel": "❌ प्रसारण रद्द।",
-        "privacy_warning": "⚠️ कृपया गोपनीयता मोड बंद करें: BotFather → /setprivacy → Disable।",
     }
 }
 
 def get_lang(user) -> dict:
-    """User-এর language_code অনুযায়ী ভাষা সিলেক্ট করে"""
     code = user.language_code or "en"
     if code.startswith("bn"):
         return LANG["bn"]
@@ -168,19 +155,18 @@ def safe_eval(expr: str):
     return eval(code, {"__builtins__": {}}, ALLOWED_NAMES)
 
 def extract_calc(text: str):
-    """Extract math expression from text and evaluate."""
     text = text.strip()
     if not text:
         return None
 
-    # Try whole text as expression
+    # 1. পুরো টেক্সট এক্সপ্রেশন কিনা চেক
     if re.match(r'^[0-9+\-*/%^().\s\wπe]+$', text):
         try:
             return format_result(safe_eval(text))
         except Exception:
             pass
 
-    # Search for patterns inside text
+    # 2. ভিতর থেকে এক্সপ্রেশন খোঁজা
     patterns = [
         r'([-+]?\d*\.?\d+[+\-*/%^]+[-+]?\d*\.?\d+(?:[+\-*/%^][-+]?\d*\.?\d+)*)',
         r'((?:sqrt|sin|cos|tan|log|pi|e|abs|factorial|pow)\s*\([^)]+\))',
@@ -204,7 +190,7 @@ def format_result(res):
 # ============ 📢 BROADCAST STATE ============
 BROADCAST_STATE = 1
 
-# ============ 🚀 COMMAND HANDLERS ============
+# ============ 🚀 HANDLERS ============
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     user = update.effective_user
@@ -223,7 +209,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 lang["start_user"].format(version=VERSION, dev=DEVELOPERS)
             )
     else:
-        # Group – silently save, no message (avoid spam)
+        # গ্রুপ – চুপচাপ চ্যাট আইডি সেভ
         save_chat(chat.id, "group")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -235,18 +221,13 @@ async def credits_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(lang["credits"].format(dev=DEVELOPERS, version=VERSION))
 
 async def new_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """When bot is added to a group."""
+    """ When bot is added to a group – stay completely silent """
     chat = update.effective_chat
     for member in update.message.new_chat_members:
         if member.id == context.bot.id:
             save_chat(chat.id, "group")
-            # Send welcome message in default English or admin's language? Use English as fallback
-            # Actually we can't determine group language easily, so use English.
-            lang = LANG["en"]  # Default English for group
-            await update.message.reply_text(lang["group_added"])
             break
 
-# ============ 📩 TEXT MESSAGE HANDLER ============
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     user = update.effective_user
@@ -256,7 +237,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     save_chat(chat.id, "private" if chat.type == "private" else "group")
 
-    # ===== ADMIN BROADCAST FLOW (private only) =====
+    # ===== ADMIN PRIVATE BROADCAST FLOW =====
     if user.id in ADMIN_IDS and chat.type == "private":
         state = context.user_data.get("state")
         if state == BROADCAST_STATE:
@@ -284,7 +265,6 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             elif chat.type == "private":
                 await msg.reply_text(lang["not_math"])
 
-# ============ 🖼️ MEDIA HANDLER ============
 async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     user = update.effective_user
@@ -324,23 +304,18 @@ async def broadcast_content(update: Update, context: ContextTypes.DEFAULT_TYPE):
             fail += 1
     await msg.reply_text(lang["broadcast_done"].format(success=success, fail=fail))
 
-# ============ ❗ ERROR HANDLER ============
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     logger.error(f"Update {update} caused error {context.error}")
 
-# ============ 🏁 MAIN ENTRY ============
+# ============ 🏁 MAIN ============
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
-    # Command handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("credits", credits_command))
-    # When bot is added to group
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, new_chat_members))
-    # Text messages
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-    # Media messages (for broadcast)
     media_filter = (
         filters.PHOTO |
         filters.VIDEO |
@@ -350,7 +325,6 @@ def main():
         filters.Sticker.ALL
     )
     app.add_handler(MessageHandler(media_filter, handle_media))
-    # Error handler
     app.add_error_handler(error_handler)
 
     logger.info(f"🤖 Bot v{VERSION} started polling...")
